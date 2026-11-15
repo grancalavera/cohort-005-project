@@ -11,9 +11,9 @@ import {
   courses,
   modules,
   lessons,
-  enrollments,
   users,
 } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { db } from "~/db";
 import { eq, or, sql } from "drizzle-orm";
 import { Card, CardContent } from "~/components/ui/card";
@@ -66,8 +66,8 @@ function getLessonCountForCourse(courseId: number) {
 function getEnrollmentCountForCourse(courseId: number) {
   const result = db
     .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .get();
 
   return result?.count ?? 0;

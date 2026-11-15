@@ -2427,6 +2427,21 @@ This course is still in draft while the cluster examples are rewritten against t
   const pppCountries = ["IN", "BR", "PH", "NG", "ID", "VN"];
 
   const sold = new Set<string>();
+
+  // These learners claim Seats on Ava's TypeScript Team Licence further down,
+  // so they get the course that way and never buy it themselves. A learner
+  // has at most one current Enrollment per course.
+  const nakamuraSeatClaimers = [
+    "noah.blackwood@student.dev",
+    "isla.fernandes@student.dev",
+    "ethan.okafor@student.dev",
+    "mia.lindqvist@student.dev",
+    "lucas.moreau@student.dev",
+    "zara.haddad@student.dev",
+  ];
+  for (const email of nakamuraSeatClaimers) {
+    sold.add(`${studentByEmail(email).id}:${course1.id}`);
+  }
   let generatedPurchases = 0;
   let generatedEnrollments = 0;
   let generatedProgressRows = 0;
@@ -2704,14 +2719,7 @@ This course is still in draft while the cluster examples are rewritten against t
     8,
     "TEAM-TS-NAKAMURA",
     120,
-    [
-      "noah.blackwood@student.dev",
-      "isla.fernandes@student.dev",
-      "ethan.okafor@student.dev",
-      "mia.lindqvist@student.dev",
-      "lucas.moreau@student.dev",
-      "zara.haddad@student.dev",
-    ]
+    nakamuraSeatClaimers
   );
 
   // Four seats on Design Systems, bought during launch week, none redeemed yet.

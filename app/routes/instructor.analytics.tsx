@@ -27,7 +27,6 @@ import {
   courseRatings,
   courses,
   coupons,
-  enrollments,
   lessonProgress,
   lessons,
   modules,
@@ -36,6 +35,7 @@ import {
   quizzes,
   users,
 } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { splitRevenue, type AnalyticsRange } from "~/lib/analytics";
 import { getDiscountForCountry } from "~/lib/ppp";
 import {
@@ -238,10 +238,10 @@ function getStudentRevenue(
 ): StudentRevenue[] {
   const students = db
     .selectDistinct({ userId: users.id, name: users.name })
-    .from(enrollments)
-    .innerJoin(courses, eq(enrollments.courseId, courses.id))
-    .innerJoin(users, eq(users.id, enrollments.userId))
-    .where(scopeOn(enrollments.enrolledAt, instructorId, range))
+    .from(currentEnrollments)
+    .innerJoin(courses, eq(currentEnrollments.courseId, courses.id))
+    .innerJoin(users, eq(users.id, currentEnrollments.userId))
+    .where(scopeOn(currentEnrollments.enrolledAt, instructorId, range))
     .orderBy(users.name)
     .all();
 
@@ -361,10 +361,10 @@ function getTopBuyers(
   // last thirty days.
   const enrolled = new Set(
     db
-      .selectDistinct({ userId: enrollments.userId })
-      .from(enrollments)
-      .innerJoin(courses, eq(enrollments.courseId, courses.id))
-      .where(and(inArray(enrollments.userId, buyerIds), ownedBy(instructorId)))
+      .selectDistinct({ userId: currentEnrollments.userId })
+      .from(currentEnrollments)
+      .innerJoin(courses, eq(currentEnrollments.courseId, courses.id))
+      .where(and(inArray(currentEnrollments.userId, buyerIds), ownedBy(instructorId)))
       .all()
       .map((row) => row.userId)
   );
@@ -392,6 +392,15 @@ function getRatingSummary(
     })
     .from(courseRatings)
     .innerJoin(courses, eq(courseRatings.courseId, courses.id))
+    // Only ratings from learners who still have the course count. A refunded
+    // learner's rating is kept, not counted (docs/adr/0005).
+    .innerJoin(
+      currentEnrollments,
+      and(
+        eq(currentEnrollments.userId, courseRatings.userId),
+        eq(currentEnrollments.courseId, courseRatings.courseId)
+      )
+    )
     .where(scopeOn(courseRatings.createdAt, instructorId, range))
     .get();
 
@@ -496,20 +505,20 @@ function getCourseProgressSummary(courseId: number): CourseProgressSummary {
   // student who bought and vanished is the finding, so a left join keeps them.
   const perStudent = db
     .select({
-      userId: enrollments.userId,
+      userId: currentEnrollments.userId,
       completed: countDistinct(lessonProgress.lessonId),
     })
-    .from(enrollments)
+    .from(currentEnrollments)
     .leftJoin(
       lessonProgress,
       and(
-        eq(lessonProgress.userId, enrollments.userId),
+        eq(lessonProgress.userId, currentEnrollments.userId),
         eq(lessonProgress.status, LessonProgressStatus.Completed),
         inArray(lessonProgress.lessonId, courseLessonIds(courseId))
       )
     )
-    .where(eq(enrollments.courseId, courseId))
-    .groupBy(enrollments.userId)
+    .where(eq(currentEnrollments.courseId, courseId))
+    .groupBy(currentEnrollments.userId)
     .all();
 
   if (perStudent.length === 0 || totalLessons === 0) {
@@ -544,9 +553,9 @@ const REACHED_STATUSES = [
 
 function getCourseDropOff(courseId: number): CourseFunnel {
   const enrolled = db
-    .select({ enrolledCount: countDistinct(enrollments.userId) })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .select({ enrolledCount: countDistinct(currentEnrollments.userId) })
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .get();
 
   const enrolledCount = enrolled?.enrolledCount ?? 0;
@@ -580,10 +589,10 @@ function getCourseDropOff(courseId: number): CourseFunnel {
     })
     .from(lessonProgress)
     .innerJoin(
-      enrollments,
+      currentEnrollments,
       and(
-        eq(enrollments.userId, lessonProgress.userId),
-        eq(enrollments.courseId, courseId)
+        eq(currentEnrollments.userId, lessonProgress.userId),
+        eq(currentEnrollments.courseId, courseId)
       )
     )
     .where(

@@ -14,6 +14,7 @@ import {
   listTeamLicences,
   raiseRefundRequest,
 } from "./refunds.server";
+import { isEnrolled as isCurrentlyEnrolled } from "./enrollments.server";
 
 type TestDb = ReturnType<typeof createTestDb>;
 
@@ -123,16 +124,7 @@ function claimSeat(seatId: number, userId: number) {
 }
 
 function isEnrolled(userId: number) {
-  return !!db
-    .select()
-    .from(schema.enrollments)
-    .where(
-      and(
-        eq(schema.enrollments.userId, userId),
-        eq(schema.enrollments.courseId, base.course.id)
-      )
-    )
-    .get();
+  return isCurrentlyEnrolled(db, userId, base.course.id);
 }
 
 function raise(purchaseId: number, buyerId: number) {
@@ -258,7 +250,7 @@ describe("the refund offer on the course page", () => {
 });
 
 describe("approving a Refund Request", () => {
-  it("removes the buyer's place on the course but keeps their progress", () => {
+  it("ends the buyer's Enrollment, keeping it and their progress", () => {
     const purchase = buyForSelf(base.user.id);
     db.insert(schema.lessonProgress)
       .values({
@@ -273,6 +265,13 @@ describe("approving a Refund Request", () => {
 
     expect(result.ok).toBe(true);
     expect(isEnrolled(base.user.id)).toBe(false);
+    expect(
+      db
+        .select({ endedAt: schema.enrollments.endedAt })
+        .from(schema.enrollments)
+        .where(eq(schema.enrollments.userId, base.user.id))
+        .all()
+    ).toEqual([{ endedAt: NOW.toISOString() }]);
     expect(
       db
         .select()

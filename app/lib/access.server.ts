@@ -5,9 +5,12 @@ import {
   UserRole,
   users,
   courses,
-  enrollments,
   purchases,
 } from "~/db/schema";
+import {
+  findEnrollment as findCurrentEnrollment,
+  isEnrolled,
+} from "~/lib/enrollments.server";
 import { getCurrentUserId } from "~/lib/session";
 import { resolveCountry } from "~/lib/country.server";
 import { checkPppAccess } from "~/lib/ppp";
@@ -21,17 +24,11 @@ function getCourseById(id: number) {
 }
 
 function findEnrollment(userId: number, courseId: number) {
-  return db
-    .select()
-    .from(enrollments)
-    .where(
-      and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-    )
-    .get();
+  return findCurrentEnrollment(db, userId, courseId);
 }
 
 function isUserEnrolled(userId: number, courseId: number) {
-  return !!findEnrollment(userId, courseId);
+  return isEnrolled(db, userId, courseId);
 }
 
 function findPurchase(userId: number, courseId: number) {

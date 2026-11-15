@@ -11,7 +11,6 @@ import {
   users,
   modules,
   lessons,
-  enrollments,
   purchases,
   teams,
   teamMembers,
@@ -19,6 +18,11 @@ import {
   CourseStatus,
   TeamMemberRole,
 } from "~/db/schema";
+import {
+  currentEnrollments,
+  grantEnrollment,
+  isEnrolled,
+} from "~/lib/enrollments.server";
 import { eq, and, or, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { Card, CardContent } from "~/components/ui/card";
@@ -118,25 +122,15 @@ function getLessonCountForCourse(courseId: number) {
   return count?.count ?? 0;
 }
 
-function findEnrollment(userId: number, courseId: number) {
-  return db
-    .select()
-    .from(enrollments)
-    .where(
-      and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-    )
-    .get();
-}
-
 function isUserEnrolled(userId: number, courseId: number) {
-  return !!findEnrollment(userId, courseId);
+  return isEnrolled(db, userId, courseId);
 }
 
 function getEnrollmentCountForCourse(courseId: number) {
   const result = db
     .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .get();
 
   return result?.count ?? 0;
@@ -149,8 +143,7 @@ function enrollUser(
   skipValidation: boolean
 ) {
   if (!skipValidation) {
-    const existing = findEnrollment(userId, courseId);
-    if (existing) {
+    if (isUserEnrolled(userId, courseId)) {
       throw new Error("User is already enrolled in this course");
     }
 
@@ -164,11 +157,7 @@ function enrollUser(
     }
   }
 
-  const enrollment = db
-    .insert(enrollments)
-    .values({ userId, courseId })
-    .returning()
-    .get();
+  const enrollment = grantEnrollment(db, userId, courseId, new Date());
 
   if (sendEmail) {
     // Would send welcome email here
