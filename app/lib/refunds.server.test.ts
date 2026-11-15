@@ -36,7 +36,7 @@ beforeEach(() => {
 
   platformAdmin = db
     .insert(schema.users)
-    .values({ name: "Pat Admin", email: "pat@example.com", role: UserRole.Admin })
+    .values({ name: "Pat Admin", email: "pat@example.com", role: UserRole.PlatformAdmin })
     .returning()
     .get();
 

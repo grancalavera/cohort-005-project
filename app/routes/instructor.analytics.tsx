@@ -1,7 +1,7 @@
 import { Link, isRouteErrorResponse, useSearchParams } from "react-router";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { Route } from "./+types/instructor.analytics";
-import { requireInstructorOrAdmin } from "~/lib/access.server";
+import { requireInstructorOrPlatformAdmin } from "~/lib/access.server";
 import {
   and,
   count,
@@ -75,7 +75,7 @@ import { AlertTriangle, Rocket } from "lucide-react";
 // a view can be linked to and reloaded. The loader reads them; the controls
 // write them and let the loader re-run.
 //
-// Admins additionally get an instructor picker. With none picked the service
+// Platform Admins additionally get an instructor picker. With none picked the service
 // receives a null instructor, meaning platform-wide.
 
 // "course" is the second tab; anything else falls back to the overview.
@@ -795,15 +795,15 @@ function getCourseRevenueByCountry(
 }
 
 export async function loader({ request, url }: Route.LoaderArgs) {
-  const { userId, isAdmin } = await requireInstructorOrAdmin(request);
+  const { userId, isPlatformAdmin } = await requireInstructorOrPlatformAdmin(request);
 
   const range = parseAnalyticsRange(url.searchParams.get("range"));
   const tab: AnalyticsTab =
     url.searchParams.get("tab") === "course" ? "course" : "overview";
 
-  // Instructors are pinned to their own figures; only an admin may look
+  // Instructors are pinned to their own figures; only a Platform Admin may look
   // elsewhere, and null means "every instructor".
-  const instructorId = isAdmin
+  const instructorId = isPlatformAdmin
     ? parseId(url.searchParams.get("instructor"))
     : userId;
 
@@ -827,7 +827,7 @@ export async function loader({ request, url }: Route.LoaderArgs) {
 
   // Unanswered questions. A question qualifies when it is top-level, not
   // deleted, not written by staff, and has no reply from the course's
-  // instructor or an admin.
+  // instructor or a Platform Admin.
   const questionsSince = rangeStart(range);
   const questionAuthor = alias(users, "author");
   const reply = alias(comments, "reply");
@@ -843,7 +843,7 @@ export async function loader({ request, url }: Route.LoaderArgs) {
         eq(reply.parentId, comments.id),
         isNull(reply.deletedAt),
         or(
-          eq(replyAuthor.role, UserRole.Admin),
+          eq(replyAuthor.role, UserRole.PlatformAdmin),
           eq(reply.userId, courses.instructorId)
         )
       )
@@ -853,7 +853,7 @@ export async function loader({ request, url }: Route.LoaderArgs) {
     isNull(comments.parentId),
     isNull(comments.deletedAt),
     // Staff asking their own question shouldn't queue up as work for themselves.
-    ne(questionAuthor.role, UserRole.Admin),
+    ne(questionAuthor.role, UserRole.PlatformAdmin),
     ne(comments.userId, courses.instructorId),
     notExists(staffReply),
   ];
@@ -951,10 +951,10 @@ export async function loader({ request, url }: Route.LoaderArgs) {
         : Math.round(attributedRevenue / learners.length),
   };
 
-  // Everyone who owns at least one course, for the admin's instructor picker.
-  // Owners rather than users with the instructor role: an admin who owns a
+  // Everyone who owns at least one course, for the Platform Admin's instructor picker.
+  // Owners rather than users with the instructor role: a Platform Admin who owns a
   // course contributes to the platform-wide total.
-  const instructors = isAdmin
+  const instructors = isPlatformAdmin
     ? db
         .selectDistinct({ id: users.id, name: users.name })
         .from(courses)
@@ -989,7 +989,7 @@ export async function loader({ request, url }: Route.LoaderArgs) {
     ratings: getRatingSummary(instructorId, range),
     tab,
     range,
-    isAdmin,
+    isPlatformAdmin,
     instructorId,
     selectedCourseId,
     summary,
@@ -1505,7 +1505,7 @@ export default function InstructorAnalytics({
   const {
     tab,
     range,
-    isAdmin,
+    isPlatformAdmin,
     instructorId,
     selectedCourseId,
     summary,
@@ -1552,14 +1552,14 @@ export default function InstructorAnalytics({
         <div>
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="mt-1 text-muted-foreground">
-            {isAdmin && instructorId === null
+            {isPlatformAdmin && instructorId === null
               ? "Revenue across every instructor on the platform."
               : "Revenue and earnings for your courses."}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {isAdmin && (
+          {isPlatformAdmin && (
             <Select
               value={instructorId === null ? "all" : String(instructorId)}
               onValueChange={(value) =>

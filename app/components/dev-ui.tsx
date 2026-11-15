@@ -20,7 +20,7 @@ interface DevUIProps {
 }
 
 const roleBadgeColors: Record<string, string> = {
-  admin: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+  platform_admin: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
   instructor:
     "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   learner:
@@ -35,7 +35,7 @@ function RoleBadge({ role }: { role: string }) {
         roleBadgeColors[role] ?? "bg-muted text-muted-foreground"
       )}
     >
-      {role}
+      {role.replaceAll("_", " ")}
     </span>
   );
 }

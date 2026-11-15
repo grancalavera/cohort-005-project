@@ -63,7 +63,7 @@ async function requirePlatformAdmin(request: Request) {
 
   const currentUser = getUserById(currentUserId);
 
-  if (!currentUser || currentUser.role !== UserRole.Admin) {
+  if (!currentUser || currentUser.role !== UserRole.PlatformAdmin) {
     throw data("Only Platform Admins can review refund requests.", {
       status: 403,
     });

@@ -190,14 +190,14 @@ function createPurchase(
     .get();
 }
 
-function getTeamForAdmin(userId: number) {
+function getTeamForTeamAdmin(userId: number) {
   const membership = db
     .select()
     .from(teamMembers)
     .where(
       and(
         eq(teamMembers.userId, userId),
-        eq(teamMembers.role, TeamMemberRole.Admin)
+        eq(teamMembers.role, TeamMemberRole.TeamAdmin)
       )
     )
     .get();
@@ -208,12 +208,12 @@ function getTeamForAdmin(userId: number) {
 }
 
 function getOrCreateTeamForUser(userId: number) {
-  const existingTeam = getTeamForAdmin(userId);
+  const existingTeam = getTeamForTeamAdmin(userId);
   if (existingTeam) return existingTeam;
 
   const team = db.insert(teams).values({}).returning().get();
   db.insert(teamMembers)
-    .values({ teamId: team.id, userId, role: TeamMemberRole.Admin })
+    .values({ teamId: team.id, userId, role: TeamMemberRole.TeamAdmin })
     .returning()
     .get();
   return team;

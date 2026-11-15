@@ -99,6 +99,13 @@
       "when": 1794780064393,
       "tag": "0013_rename-coupons-to-seats",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1794780134383,
+      "tag": "0014_rename-admin-roles",
+      "breakpoints": true
     }
   ]
 }

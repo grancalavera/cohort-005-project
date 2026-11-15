@@ -11,7 +11,7 @@ import {
 export enum UserRole {
   Learner = "learner",
   Instructor = "instructor",
-  Admin = "admin",
+  PlatformAdmin = "platform_admin",
 }
 
 export enum CourseStatus {
@@ -38,7 +38,7 @@ export enum RefundStatus {
 }
 
 export enum TeamMemberRole {
-  Admin = "admin",
+  TeamAdmin = "team_admin",
   Member = "member",
 }
 

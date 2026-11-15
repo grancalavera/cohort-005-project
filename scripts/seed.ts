@@ -103,7 +103,7 @@ async function seed() {
   }
 
   // ─── Users ───
-  // 1 admin, 3 instructors (one of whom owns no courses, so the empty
+  // 1 Platform Admin, 3 instructors (one of whom owns no courses, so the empty
   // instructor dashboard is reachable), and ~40 learners.
   //
   // Learners are split in two: the five named learners below, who own all the
@@ -118,7 +118,7 @@ async function seed() {
     .values({
       name: "Alex Rivera",
       email: "alex.rivera@ralph.dev",
-      role: UserRole.Admin,
+      role: UserRole.PlatformAdmin,
       avatarUrl: "https://api.dicebear.com/9.x/avataaars/svg?seed=alex",
       createdAt: daysAgo(120),
     })
@@ -267,7 +267,7 @@ async function seed() {
   const learnerCount = allLearners.length;
 
   console.log(
-    `Created ${1 + instructorCount + learnerCount} users (1 admin, ${instructorCount} instructors, ${learnerCount} learners).`
+    `Created ${1 + instructorCount + learnerCount} users (1 Platform Admin, ${instructorCount} instructors, ${learnerCount} learners).`
   );
 
   // ─── Categories ───
@@ -1968,7 +1968,7 @@ This course is still in draft while the cluster examples are rewritten against t
     createdAt: daysAgo(9),
   });
 
-  // Course 2: answered by an admin rather than the owning instructor.
+  // Course 2: answered by a Platform Admin rather than the owning instructor.
   const c2q2 = comment({
     lessonId: course2LessonIds[0],
     userId: learners[2].id,
@@ -2293,7 +2293,7 @@ This course is still in draft while the cluster examples are rewritten against t
     .values({
       teamId: team1.id,
       userId: bossy.id,
-      role: TeamMemberRole.Admin,
+      role: TeamMemberRole.TeamAdmin,
       createdAt: daysAgo(30),
     })
     .run();
@@ -2355,7 +2355,7 @@ This course is still in draft while the cluster examples are rewritten against t
     .run();
 
   console.log(
-    `Created 1 team with Bossy McBossface as admin, 1 Team Licence, and ${seededSeats.length} seats (${countRows(schema.seats, isNotNull(schema.seats.claimedByUserId))} claimed, ${countRows(schema.seats, isNull(schema.seats.claimedByUserId))} available).`
+    `Created 1 team with Bossy McBossface as Team Admin, 1 Team Licence, and ${seededSeats.length} seats (${countRows(schema.seats, isNotNull(schema.seats.claimedByUserId))} claimed, ${countRows(schema.seats, isNull(schema.seats.claimedByUserId))} available).`
   );
 
   // ─── Generated history ───
@@ -2614,14 +2614,14 @@ This course is still in draft while the cluster examples are rewritten against t
   // bought and claimed nothing yet.
 
   function createTeamPurchase(
-    adminEmail: string,
+    teamAdminEmail: string,
     course: typeof course1,
     seats: number,
     codePrefix: string,
     purchasedDaysAgo: number,
     claimerEmails: string[]
   ) {
-    const teamAdmin = learnerByEmail(adminEmail);
+    const teamAdmin = learnerByEmail(teamAdminEmail);
 
     const [team] = db
       .insert(schema.teams)
@@ -2633,7 +2633,7 @@ This course is still in draft while the cluster examples are rewritten against t
       .values({
         teamId: team.id,
         userId: teamAdmin.id,
-        role: TeamMemberRole.Admin,
+        role: TeamMemberRole.TeamAdmin,
         createdAt: daysAgo(purchasedDaysAgo),
       })
       .run();
@@ -2826,7 +2826,7 @@ This course is still in draft while the cluster examples are rewritten against t
 
   console.log("\n✓ Seed complete!");
   console.log(
-    `  Users: ${countRows(schema.users)} (${countRows(schema.users, eq(schema.users.role, UserRole.Admin))} admin, ${countRows(schema.users, eq(schema.users.role, UserRole.Instructor))} instructors, ${countRows(schema.users, eq(schema.users.role, UserRole.Learner))} learners)`
+    `  Users: ${countRows(schema.users)} (${countRows(schema.users, eq(schema.users.role, UserRole.PlatformAdmin))} Platform Admin, ${countRows(schema.users, eq(schema.users.role, UserRole.Instructor))} instructors, ${countRows(schema.users, eq(schema.users.role, UserRole.Learner))} learners)`
   );
   console.log(`  Categories: ${countRows(schema.categories)}`);
   console.log(
