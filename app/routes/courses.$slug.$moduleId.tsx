@@ -5,13 +5,13 @@ import { db } from "~/db";
 import {
   categories,
   courses,
-  enrollments,
   lessonProgress,
   lessons,
   modules,
   users,
   LessonProgressStatus,
 } from "~/db/schema";
+import { isEnrolled } from "~/lib/enrollments.server";
 import { and, eq, or } from "drizzle-orm";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -112,15 +112,7 @@ function getModuleWithLessons(id: number) {
 }
 
 function isUserEnrolled(userId: number, courseId: number) {
-  const existing = db
-    .select()
-    .from(enrollments)
-    .where(
-      and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-    )
-    .get();
-
-  return !!existing;
+  return isEnrolled(db, userId, courseId);
 }
 
 function getLessonProgressForCourse(userId: number, courseId: number) {

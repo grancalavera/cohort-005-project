@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -132,8 +133,18 @@ export const enrollments = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
     completedAt: text("completed_at"),
+    // Set when a Refund Request on the learner's Individual Purchase is
+    // approved. An Ended Enrollment is kept, never deleted (docs/adr/0005).
+    // Read and write this table only through app/lib/enrollments.server.ts.
+    endedAt: text("ended_at"),
   },
-  (table) => [index("enrollments_course_idx").on(table.courseId)]
+  (table) => [
+    index("enrollments_course_idx").on(table.courseId),
+    // At most one current Enrollment per learner per course.
+    uniqueIndex("enrollments_current_unique")
+      .on(table.userId, table.courseId)
+      .where(sql`ended_at is null`),
+  ]
 );
 
 export const lessonProgress = sqliteTable(

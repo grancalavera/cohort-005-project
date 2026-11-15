@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/instructor.$courseId.students";
 import { getCurrentUserId } from "~/lib/session";
 import { UserRole } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { AlertTriangle, ArrowLeft, Users, Award } from "lucide-react";
@@ -12,7 +13,6 @@ import {
   lessons,
   users,
   courses,
-  enrollments,
   quizzes,
   quizAttempts,
   lessonProgress,
@@ -31,13 +31,13 @@ function getCourseById(id: number) {
 function getCourseEnrolledStudents(courseId: number) {
   return db
     .select({
-      enrollmentId: enrollments.id,
-      userId: enrollments.userId,
-      enrolledAt: enrollments.enrolledAt,
-      completedAt: enrollments.completedAt,
+      enrollmentId: currentEnrollments.id,
+      userId: currentEnrollments.userId,
+      enrolledAt: currentEnrollments.enrolledAt,
+      completedAt: currentEnrollments.completedAt,
     })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .all();
 }
 

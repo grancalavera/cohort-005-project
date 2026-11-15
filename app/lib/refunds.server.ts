@@ -5,7 +5,6 @@ import * as schema from "~/db/schema";
 import {
   coupons,
   courses,
-  enrollments,
   lessonProgress,
   lessons,
   modules,
@@ -16,6 +15,7 @@ import {
   LessonProgressStatus,
   RefundStatus,
 } from "~/db/schema";
+import { endEnrollment } from "~/lib/enrollments.server";
 import { formatPrice } from "~/lib/utils";
 import {
   REFUND_COMPLETION_LIMIT,
@@ -27,7 +27,7 @@ import {
 // ─── Refunds ───
 // Everything about Refund Requests: whether a Purchase may be refunded, raising
 // a Refund Request, and a Platform Admin deciding one. See GLOSSARY.md for the
-// language and docs/adr/0001–0004 for why it works the way it does.
+// language and docs/adr/0001–0005 for why it works the way it does.
 //
 // Every function takes the database first, so tests can hand in an in-memory
 // one. Uses positional parameters (project convention).
@@ -606,8 +606,8 @@ function findOpenRefundRequest(
  * Approves an Open Refund Request and ends what its Purchase granted.
  *
  * - An Individual Purchase: the buyer loses their place on the course, unless
- *   they also hold a Claimed Seat for it (docs/adr/0004). Their progress stays
- *   (docs/adr/0001).
+ *   they also hold a Claimed Seat for it (docs/adr/0004). Their Enrollment
+ *   ends but is kept (docs/adr/0005), and their progress stays (docs/adr/0001).
  * - A Team Licence: its Unclaimed Seats can never be claimed. Refused if any
  *   Seat has been claimed (docs/adr/0003).
  */
@@ -655,14 +655,7 @@ export function approveRefundRequest(
         .get();
 
       if (!claimedSeat) {
-        tx.delete(enrollments)
-          .where(
-            and(
-              eq(enrollments.userId, purchase.userId),
-              eq(enrollments.courseId, purchase.courseId)
-            )
-          )
-          .run();
+        endEnrollment(tx, purchase.userId, purchase.courseId, now);
       }
     }
 

@@ -2,13 +2,13 @@ import { Link } from "react-router";
 import type { Route } from "./+types/dashboard";
 import { db } from "~/db";
 import {
-  enrollments,
   courses,
   modules,
   lessons,
   lessonProgress,
   LessonProgressStatus,
 } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { eq, and, or, sql } from "drizzle-orm";
 import { getCurrentUserId } from "~/lib/session";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
@@ -21,18 +21,18 @@ import { data, isRouteErrorResponse } from "react-router";
 function getUserEnrolledCourses(userId: number) {
   return db
     .select({
-      enrollmentId: enrollments.id,
-      courseId: enrollments.courseId,
-      enrolledAt: enrollments.enrolledAt,
-      completedAt: enrollments.completedAt,
+      enrollmentId: currentEnrollments.id,
+      courseId: currentEnrollments.courseId,
+      enrolledAt: currentEnrollments.enrolledAt,
+      completedAt: currentEnrollments.completedAt,
       courseTitle: courses.title,
       courseSlug: courses.slug,
       courseDescription: courses.description,
       coverImageUrl: courses.coverImageUrl,
     })
-    .from(enrollments)
-    .innerJoin(courses, eq(enrollments.courseId, courses.id))
-    .where(eq(enrollments.userId, userId))
+    .from(currentEnrollments)
+    .innerJoin(courses, eq(currentEnrollments.courseId, courses.id))
+    .where(eq(currentEnrollments.userId, userId))
     .all();
 }
 

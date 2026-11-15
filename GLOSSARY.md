@@ -21,14 +21,14 @@ A single payment for a course. It is either an Individual Purchase or a Team Lic
 _Avoid_: Order, Transaction
 
 **Individual Purchase**:
-A Purchase a learner makes for themselves. It gives the buyer the course.
+A Purchase a learner makes for themselves. It gives the buyer an Enrollment.
 
 **Team Licence**:
 A Purchase a Team Admin makes for others. It grants Seats, not the course itself; the buyer can't watch the course through it.
 _Avoid_: Team purchase, Bulk purchase
 
 **Seat**:
-One place on a Team Licence that a learner can claim to get the course.
+One place on a Team Licence that a learner can claim to get an Enrollment.
 _Avoid_: Coupon, Code, Voucher
 
 **Unclaimed Seat**:
@@ -36,6 +36,16 @@ A Seat no learner has claimed yet.
 
 **Claimed Seat**:
 A Seat a learner has claimed. It belongs to that learner, so a Team Licence with any Claimed Seat can't be refunded.
+
+### Enrollments
+
+**Enrollment**:
+A learner's right to watch a course, granted by an Individual Purchase or a Claimed Seat. It doesn't record which one granted it. A learner has at most one current Enrollment per course.
+_Avoid_: Place, Access, Membership
+
+**Ended Enrollment**:
+An Enrollment that no longer gives the course, because a Platform Admin approved a Refund Request on the learner's Individual Purchase and they hold no Claimed Seat for that course. A learner with only an Ended Enrollment doesn't have the course and isn't counted as one of its students. Buying the course again gives them a new Enrollment.
+_Avoid_: Deleted, Cancelled, Unenrolled
 
 ### Refunds
 
@@ -48,7 +58,7 @@ A Refund Request no Platform Admin has decided yet. The buyer keeps the course w
 _Avoid_: Pending, Requested, Awaiting review
 
 **Approved Refund Request**:
-A Refund Request a Platform Admin has accepted. Approving it ends what the Purchase granted (the buyer's place on the course for an Individual Purchase; its Unclaimed Seats, which can then never be claimed, for a Team Licence) and leads to a Refund.
+A Refund Request a Platform Admin has accepted. Approving it ends what the Purchase granted (the buyer's Enrollment for an Individual Purchase, unless they also hold a Claimed Seat; its Unclaimed Seats, which can then never be claimed, for a Team Licence) and leads to a Refund.
 
 **Declined Refund Request**:
 A Refund Request a Platform Admin has turned down. Nothing the Purchase granted is lost, it has no Refund, and the buyer may raise a new Refund Request.

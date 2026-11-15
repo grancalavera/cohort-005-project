@@ -11,11 +11,11 @@ import {
   users,
   modules,
   lessons,
-  enrollments,
   lessonProgress,
   courseRatings,
   LessonProgressStatus,
 } from "~/db/schema";
+import { currentEnrollments, isEnrolled } from "~/lib/enrollments.server";
 import { eq, and, or, sql } from "drizzle-orm";
 import { getRefundOffer, type RefundOffer } from "~/lib/refunds.server";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
@@ -133,14 +133,7 @@ function getLessonCountForCourse(courseId: number) {
 }
 
 function isUserEnrolled(userId: number, courseId: number) {
-  const enrollment = db
-    .select()
-    .from(enrollments)
-    .where(
-      and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-    )
-    .get();
-  return !!enrollment;
+  return isEnrolled(db, userId, courseId);
 }
 
 function getCourseLessonIds(courseId: number): number[] {
@@ -314,6 +307,15 @@ function getCourseRatingSummary(courseId: number): CourseRatingSummary {
       count: sql<number>`count(*)`,
     })
     .from(courseRatings)
+    // Only ratings from learners who still have the course count. A refunded
+    // learner's rating is kept, not counted (docs/adr/0005).
+    .innerJoin(
+      currentEnrollments,
+      and(
+        eq(currentEnrollments.userId, courseRatings.userId),
+        eq(currentEnrollments.courseId, courseRatings.courseId)
+      )
+    )
     .where(eq(courseRatings.courseId, courseId))
     .get();
 

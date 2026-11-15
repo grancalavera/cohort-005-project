@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/instructor.$courseId";
 import { getCurrentUserId } from "~/lib/session";
 import { CourseStatus, UserRole } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { db } from "~/db";
 import {
   courses,
@@ -17,7 +18,6 @@ import {
   users,
   modules,
   lessons,
-  enrollments,
   lessonProgress,
   LessonProgressStatus,
   quizzes,
@@ -359,8 +359,8 @@ function moveLessonToModule(
 function getEnrollmentCountForCourse(courseId: number) {
   const result = db
     .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .get();
 
   return result?.count ?? 0;
@@ -369,13 +369,13 @@ function getEnrollmentCountForCourse(courseId: number) {
 function getCourseEnrolledStudents(courseId: number) {
   return db
     .select({
-      enrollmentId: enrollments.id,
-      userId: enrollments.userId,
-      enrolledAt: enrollments.enrolledAt,
-      completedAt: enrollments.completedAt,
+      enrollmentId: currentEnrollments.id,
+      userId: currentEnrollments.userId,
+      enrolledAt: currentEnrollments.enrolledAt,
+      completedAt: currentEnrollments.completedAt,
     })
-    .from(enrollments)
-    .where(eq(enrollments.courseId, courseId))
+    .from(currentEnrollments)
+    .where(eq(currentEnrollments.courseId, courseId))
     .all();
 }
 

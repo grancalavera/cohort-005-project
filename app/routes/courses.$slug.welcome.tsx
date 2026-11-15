@@ -7,8 +7,8 @@ import {
   users,
   modules,
   lessons,
-  enrollments,
 } from "~/db/schema";
+import { isEnrolled } from "~/lib/enrollments.server";
 import { eq, and, or } from "drizzle-orm";
 import { getCurrentUserId } from "~/lib/session";
 import { Button } from "~/components/ui/button";
@@ -78,14 +78,7 @@ function getCourseWithDetails(id: number) {
 }
 
 function isUserEnrolled(userId: number, courseId: number) {
-  const enrollment = db
-    .select()
-    .from(enrollments)
-    .where(
-      and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-    )
-    .get();
-  return !!enrollment;
+  return isEnrolled(db, userId, courseId);
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {

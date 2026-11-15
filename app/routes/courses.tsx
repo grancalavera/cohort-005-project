@@ -7,12 +7,12 @@ import {
   users,
   modules,
   lessons,
-  enrollments as enrollmentsTable,
   lessonProgress,
   courseRatings,
   CourseStatus,
   LessonProgressStatus,
 } from "~/db/schema";
+import { currentEnrollments } from "~/lib/enrollments.server";
 import { eq, like, and, or, sql, inArray } from "drizzle-orm";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -116,18 +116,18 @@ function getAllCategories() {
 function getUserEnrolledCourses(userId: number) {
   return db
     .select({
-      enrollmentId: enrollmentsTable.id,
-      courseId: enrollmentsTable.courseId,
-      enrolledAt: enrollmentsTable.enrolledAt,
-      completedAt: enrollmentsTable.completedAt,
+      enrollmentId: currentEnrollments.id,
+      courseId: currentEnrollments.courseId,
+      enrolledAt: currentEnrollments.enrolledAt,
+      completedAt: currentEnrollments.completedAt,
       courseTitle: coursesTable.title,
       courseSlug: coursesTable.slug,
       courseDescription: coursesTable.description,
       coverImageUrl: coursesTable.coverImageUrl,
     })
-    .from(enrollmentsTable)
-    .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
-    .where(eq(enrollmentsTable.userId, userId))
+    .from(currentEnrollments)
+    .innerJoin(coursesTable, eq(currentEnrollments.courseId, coursesTable.id))
+    .where(eq(currentEnrollments.userId, userId))
     .all();
 }
 
@@ -251,6 +251,15 @@ function getCourseRatingSummaries(
       count: sql<number>`count(*)`,
     })
     .from(courseRatings)
+    // Only ratings from learners who still have the course count. A refunded
+    // learner's rating is kept, not counted (docs/adr/0005).
+    .innerJoin(
+      currentEnrollments,
+      and(
+        eq(currentEnrollments.userId, courseRatings.userId),
+        eq(currentEnrollments.courseId, courseRatings.courseId)
+      )
+    )
     .where(inArray(courseRatings.courseId, courseIds))
     .groupBy(courseRatings.courseId)
     .all();
