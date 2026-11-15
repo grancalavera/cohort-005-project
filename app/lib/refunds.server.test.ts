@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { createTestDb, seedBaseData } from "~/test/setup";
 import * as schema from "~/db/schema";
-import { LessonProgressStatus, RefundStatus, UserRole } from "~/db/schema";
+import { LessonProgressStatus, RefundRequestStatus, UserRole } from "~/db/schema";
 import {
   approveRefundRequest,
   checkRefundRequest,
@@ -283,11 +283,11 @@ describe("approving a Refund Request", () => {
 
     const refundRequest = db
       .select()
-      .from(schema.refunds)
-      .where(eq(schema.refunds.id, id))
+      .from(schema.refundRequests)
+      .where(eq(schema.refundRequests.id, id))
       .get();
     expect(refundRequest).toMatchObject({
-      status: RefundStatus.Approved,
+      status: RefundRequestStatus.Approved,
       amountRefunded: 7900,
       resolvedByUserId: platformAdmin.id,
     });
@@ -425,7 +425,7 @@ describe("listing Refund Requests", () => {
       )
       .run();
 
-    const [row] = listRefundRequestsForReview(db, RefundStatus.Open, NOW);
+    const [row] = listRefundRequestsForReview(db, RefundRequestStatus.Open, NOW);
 
     expect(row).toMatchObject({
       id,
@@ -446,7 +446,7 @@ describe("listing Refund Requests", () => {
     const { purchase } = buySeats(priya.id, 3);
     raise(purchase.id, priya.id);
 
-    const [row] = listRefundRequestsForReview(db, RefundStatus.Open, NOW);
+    const [row] = listRefundRequestsForReview(db, RefundRequestStatus.Open, NOW);
 
     expect(row.figures).toEqual({
       kind: "team_licence",
@@ -470,13 +470,13 @@ describe("listing Refund Requests", () => {
     if (!secondId.ok) throw new Error(secondId.error);
 
     expect(
-      listRefundRequestsForReview(db, RefundStatus.Open, NOW).map((r) => r.id)
+      listRefundRequestsForReview(db, RefundRequestStatus.Open, NOW).map((r) => r.id)
     ).toEqual([firstId, secondId.refundRequestId]);
 
     approveRefundRequest(db, firstId, platformAdmin.id, null, NOW);
 
     expect(
-      listRefundRequestsForReview(db, RefundStatus.Approved, NOW)
+      listRefundRequestsForReview(db, RefundRequestStatus.Approved, NOW)
     ).toMatchObject([{ id: firstId, decidedByName: "Pat Admin" }]);
   });
 
@@ -486,7 +486,7 @@ describe("listing Refund Requests", () => {
     declineRefundRequest(db, id, platformAdmin.id, "Past half way.", NOW);
 
     expect(listRefundRequestsForBuyer(db, base.user.id)).toMatchObject([
-      { id, status: RefundStatus.Declined, decisionNote: "Past half way." },
+      { id, status: RefundRequestStatus.Declined, decisionNote: "Past half way." },
     ]);
   });
 

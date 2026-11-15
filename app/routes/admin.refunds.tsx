@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Route } from "./+types/admin.refunds";
 import { getCurrentUserId } from "~/lib/session";
 import { parseFormData } from "~/lib/validation";
-import { RefundStatus, UserRole, users } from "~/db/schema";
+import { RefundRequestStatus, UserRole, users } from "~/db/schema";
 import { db } from "~/db";
 import { eq } from "drizzle-orm";
 import { Card, CardContent } from "~/components/ui/card";
@@ -23,8 +23,8 @@ import {
 import { RULE_BREAK_LABELS } from "~/lib/refund-rules";
 
 const refundFilterSchema = z
-  .nativeEnum(RefundStatus)
-  .catch(RefundStatus.Open);
+  .nativeEnum(RefundRequestStatus)
+  .catch(RefundRequestStatus.Open);
 
 const adminRefundActionSchema = z.discriminatedUnion("intent", [
   z.object({
@@ -139,10 +139,10 @@ export async function action({ request }: Route.ActionArgs) {
   };
 }
 
-const FILTERS: { status: RefundStatus; label: string }[] = [
-  { status: RefundStatus.Open, label: "Open" },
-  { status: RefundStatus.Approved, label: "Approved" },
-  { status: RefundStatus.Declined, label: "Declined" },
+const FILTERS: { status: RefundRequestStatus; label: string }[] = [
+  { status: RefundRequestStatus.Open, label: "Open" },
+  { status: RefundRequestStatus.Approved, label: "Approved" },
+  { status: RefundRequestStatus.Declined, label: "Declined" },
 ];
 
 export default function AdminRefunds({ loaderData }: Route.ComponentProps) {
@@ -174,7 +174,7 @@ export default function AdminRefunds({ loaderData }: Route.ComponentProps) {
             size="sm"
             onClick={() =>
               setSearchParams(
-                filter.status === RefundStatus.Open
+                filter.status === RefundRequestStatus.Open
                   ? {}
                   : { status: filter.status }
               )
@@ -270,7 +270,7 @@ function RefundRequestCard({
   >();
   const [note, setNote] = useState("");
   const isSubmitting = fetcher.state !== "idle";
-  const isOpen = refundRequest.status === RefundStatus.Open;
+  const isOpen = refundRequest.status === RefundRequestStatus.Open;
 
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
@@ -359,7 +359,7 @@ function RefundRequestCard({
           </div>
         ) : (
           <div className="border-t pt-4 text-sm text-muted-foreground">
-            {refundRequest.status === RefundStatus.Approved
+            {refundRequest.status === RefundRequestStatus.Approved
               ? "Approved"
               : "Declined"}
             {refundRequest.decidedByName &&
