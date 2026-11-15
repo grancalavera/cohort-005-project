@@ -6,3 +6,5 @@ A Refund is always the full amount paid, so a Team Licence with any Claimed Seat
 
 - **Let Seats be claimed while Open, and only allow Decline afterwards**: rejected, because the Team Admin's request would be quietly defeated by a colleague.
 - **Refund part of the money for the Unclaimed Seats**: rejected, because it breaks "a Refund is always the full amount" and needs a per-Seat price.
+
+_Terminology updated to match GLOSSARY.md (Enrollment, Learner, Seat)._
