@@ -211,7 +211,7 @@ describe("raising a Refund Request", () => {
     );
   });
 
-  it("refuses a buyer who has watched two hours", () => {
+  it("refuses a buyer who has Watched past the Watch Limit", () => {
     const purchase = buyForSelf(base.user.id);
     db.insert(schema.videoWatchEvents)
       .values([
