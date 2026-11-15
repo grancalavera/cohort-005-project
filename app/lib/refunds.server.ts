@@ -3,7 +3,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { alias } from "drizzle-orm/sqlite-core";
 import * as schema from "~/db/schema";
 import {
-  coupons,
+  seats,
   courses,
   enrollments,
   lessonProgress,
@@ -37,7 +37,7 @@ type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type Queryable = Db | Tx;
 
 type Purchase = typeof purchases.$inferSelect;
-type Seat = typeof coupons.$inferSelect;
+type Seat = typeof seats.$inferSelect;
 
 // ─── Calendar days ───
 
@@ -72,21 +72,21 @@ function getPurchase(db: Queryable, purchaseId: number) {
 function getSeats(db: Queryable, purchaseId: number): Seat[] {
   return db
     .select()
-    .from(coupons)
-    .where(eq(coupons.purchaseId, purchaseId))
+    .from(seats)
+    .where(eq(seats.purchaseId, purchaseId))
     .all();
 }
 
 function isClaimed(seat: Seat) {
-  return seat.redeemedAt !== null;
+  return seat.claimedAt !== null;
 }
 
 // There is no column saying which kind a Purchase is: a Team Licence is the
 // Purchase that granted Seats, and every Team Licence grants at least one.
 export type PurchaseKind = "individual_purchase" | "team_licence";
 
-function kindOf(seats: Seat[]): PurchaseKind {
-  return seats.length > 0 ? "team_licence" : "individual_purchase";
+function kindOf(licenceSeats: Seat[]): PurchaseKind {
+  return licenceSeats.length > 0 ? "team_licence" : "individual_purchase";
 }
 
 function getRefundRequestWithStatus(
@@ -113,7 +113,7 @@ export function getSeatAvailability(
   seat: Seat
 ): SeatAvailability {
   if (isClaimed(seat)) return "claimed";
-  if (seat.refundedAt !== null) return "refunded";
+  if (seat.refundApprovedAt !== null) return "refunded";
   if (getRefundRequestWithStatus(db, seat.purchaseId, RefundStatus.Open)) {
     return "on_hold";
   }
@@ -193,13 +193,13 @@ export type RefundFigures =
     };
 
 function getRefundFigures(db: Queryable, purchase: Purchase): RefundFigures {
-  const seats = getSeats(db, purchase.id);
+  const licenceSeats = getSeats(db, purchase.id);
 
-  if (kindOf(seats) === "team_licence") {
+  if (kindOf(licenceSeats) === "team_licence") {
     return {
       kind: "team_licence",
-      seatCount: seats.length,
-      claimedSeatCount: seats.filter(isClaimed).length,
+      seatCount: licenceSeats.length,
+      claimedSeatCount: licenceSeats.filter(isClaimed).length,
     };
   }
 
@@ -539,8 +539,8 @@ export function listTeamLicences(db: Queryable, buyerId: number, now: Date) {
     .all();
 
   return bought.flatMap(({ purchase, courseTitle, courseSlug }) => {
-    const seats = getSeats(db, purchase.id);
-    if (kindOf(seats) !== "team_licence") return [];
+    const licenceSeats = getSeats(db, purchase.id);
+    if (kindOf(licenceSeats) !== "team_licence") return [];
 
     const latestRefundRequest = db
       .select({ status: refunds.status, decisionNote: refunds.decisionNote })
@@ -556,8 +556,8 @@ export function listTeamLicences(db: Queryable, buyerId: number, now: Date) {
         courseSlug,
         amountPaid: purchase.amountPaid,
         purchasedAt: purchase.createdAt,
-        seatCount: seats.length,
-        claimedSeatCount: seats.filter(isClaimed).length,
+        seatCount: licenceSeats.length,
+        claimedSeatCount: licenceSeats.filter(isClaimed).length,
         latestRefundRequest: latestRefundRequest ?? null,
         canRequestRefund: checkRefundRequest(db, purchase.id, buyerId, now).ok,
         lastDayInWindow: lastDayOfWindow(purchase.createdAt),
@@ -623,10 +623,10 @@ export function approveRefundRequest(
     if (!found.ok) return found;
 
     const { purchase } = found;
-    const seats = getSeats(tx, purchase.id);
+    const licenceSeats = getSeats(tx, purchase.id);
 
-    if (kindOf(seats) === "team_licence") {
-      if (seats.some(isClaimed)) {
+    if (kindOf(licenceSeats) === "team_licence") {
+      if (licenceSeats.some(isClaimed)) {
         return {
           ok: false,
           status: 409,
@@ -635,21 +635,21 @@ export function approveRefundRequest(
         };
       }
 
-      tx.update(coupons)
-        .set({ refundedAt: now.toISOString() })
+      tx.update(seats)
+        .set({ refundApprovedAt: now.toISOString() })
         .where(
-          and(eq(coupons.purchaseId, purchase.id), isNull(coupons.redeemedAt))
+          and(eq(seats.purchaseId, purchase.id), isNull(seats.claimedAt))
         )
         .run();
     } else {
       const claimedSeat = tx
-        .select({ id: coupons.id })
-        .from(coupons)
+        .select({ id: seats.id })
+        .from(seats)
         .where(
           and(
-            eq(coupons.redeemedByUserId, purchase.userId),
-            eq(coupons.courseId, purchase.courseId),
-            isNotNull(coupons.redeemedAt)
+            eq(seats.claimedByUserId, purchase.userId),
+            eq(seats.courseId, purchase.courseId),
+            isNotNull(seats.claimedAt)
           )
         )
         .get();

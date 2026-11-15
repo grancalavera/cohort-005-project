@@ -277,7 +277,7 @@ export const teamMembers = sqliteTable("team_members", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
-export const coupons = sqliteTable("coupons", {
+export const seats = sqliteTable("seats", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   teamId: integer("team_id")
     .notNull()
@@ -289,11 +289,11 @@ export const coupons = sqliteTable("coupons", {
   purchaseId: integer("purchase_id")
     .notNull()
     .references(() => purchases.id),
-  redeemedByUserId: integer("redeemed_by_user_id").references(() => users.id),
-  redeemedAt: text("redeemed_at"),
+  claimedByUserId: integer("claimed_by_user_id").references(() => users.id),
+  claimedAt: text("claimed_at"),
   // Set on every Unclaimed Seat when its Team Licence's Refund Request is
   // approved. The Seat can never be claimed after that.
-  refundedAt: text("refunded_at"),
+  refundApprovedAt: text("refund_approved_at"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

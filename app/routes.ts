@@ -46,7 +46,7 @@ export default [
     route("admin/refunds", "routes/admin.refunds.tsx"),
     route("settings", "routes/settings.tsx"),
     route("team", "routes/team.tsx"),
-    route("redeem/:code", "routes/redeem.$code.tsx"),
+    route("claim/:code", "routes/claim.$code.tsx"),
   ]),
   route("signup", "routes/signup.tsx"),
   route("login", "routes/login.tsx"),

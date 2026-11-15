@@ -99,7 +99,7 @@ function buySeats(userId: number, seats: number, daysAgo = 3) {
     .get();
   const seatRows = Array.from({ length: seats }, (_, i) =>
     db
-      .insert(schema.coupons)
+      .insert(schema.seats)
       .values({
         teamId: team.id,
         courseId: base.course.id,
@@ -113,9 +113,9 @@ function buySeats(userId: number, seats: number, daysAgo = 3) {
 }
 
 function claimSeat(seatId: number, userId: number) {
-  db.update(schema.coupons)
-    .set({ redeemedByUserId: userId, redeemedAt: daysBefore(1) })
-    .where(eq(schema.coupons.id, seatId))
+  db.update(schema.seats)
+    .set({ claimedByUserId: userId, claimedAt: daysBefore(1) })
+    .where(eq(schema.seats.id, seatId))
     .run();
   db.insert(schema.enrollments)
     .values({ userId, courseId: base.course.id })
@@ -150,8 +150,8 @@ function raise(purchaseId: number, buyerId: number) {
 function getSeat(seatId: number) {
   const seat = db
     .select()
-    .from(schema.coupons)
-    .where(eq(schema.coupons.id, seatId))
+    .from(schema.seats)
+    .where(eq(schema.seats.id, seatId))
     .get();
   if (!seat) throw new Error("Seat not found");
   return seat;
